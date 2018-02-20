@@ -1,0 +1,68 @@
+"""
+.. See the NOTICE file distributed with this work for additional information
+   regarding copyright ownership.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+"""
+
+from __future__ import print_function
+
+import luigi
+
+from luigi.contrib.lsf import LSFJobTask
+
+from tool.bowtie_indexer import bowtieIndexerTool
+
+class TimeTaskBowtie2Index(object):  # pylint: disable=too-few-public-methods
+    """
+    Timer object
+    """
+
+    @luigi.Task.event_handler(luigi.Event.PROCESSING_TIME)
+    def print_execution_time(self, processing_time):  # pylint: disable=no-self-use
+        """
+        Print the length of time the task ran for (seconds)
+        """
+        print('### PROCESSING TIME - Bowtie2 Indexing ###: ' + str(processing_time))
+
+class ProcessIndexBowtie2(LSFJobTask, TimeTaskBowtie2Index):
+    """
+    Tool wrapper for generating a Bowtie2 Index
+    """
+
+    genome_fa = luigi.Parameter()
+    genome_idx = luigi.Parameter()
+
+    def output(self):
+        """
+        Returns
+        -------
+        output : luigi.LocalTarget()
+            Location of the compressed index
+        """
+        return luigi.LocalTarget(self.genome_idx)
+
+    def work(self):
+        """
+        Worker function for indexing genomes in FASTA format using Bowtie2
+
+        Parameters
+        ----------
+        genome_fa : str
+            Location of the FASTA file of the genome to index
+        genome_idx : str
+            Location of the aligned reads in bam format
+        """
+
+        bowtie2_handle = bowtieIndexerTool()
+        bowtie2_handle.bowtie2_indexer(self.genome_fa, self.genome_idx)
