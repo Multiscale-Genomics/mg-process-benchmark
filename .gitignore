@@ -1,0 +1,12 @@
+*.fastq
+*.bam
+*.pyc
+.python-version
+.egg*
+*~
+*.DS_Store
+*_build*
+mg_process_benchmark.egg-info*
+/results
+/data
+/public_tmp
