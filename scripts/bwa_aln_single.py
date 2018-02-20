@@ -32,6 +32,8 @@ MEMORY_FLAG_ALIGNMENT = "8192"
 QUEUE_FLAG = "production-rh7"
 SAVE_JOB_INFO = False
 
+FASTQ_CHUNK_SIZE=1000000
+
 class BwaAlnSingle(luigi.Task):
     """
     Pipeline for aligning single end reads using BWA ALN
@@ -68,7 +70,7 @@ class BwaAlnSingle(luigi.Task):
             Location of the aligned reads in bam format
         """
         split_fastq = ProcessSplitFastQSingle(
-            in_fastq_file=self.in_fastq_file,
+            in_fastq_file=self.in_fastq_file, fastq_chunk_size=FASTQ_CHUNK_SIZE,
             n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR, queue_flag=QUEUE_FLAG,
             save_job_info=SAVE_JOB_INFO)
         yield split_fastq
@@ -97,7 +99,7 @@ class BwaAlnSingle(luigi.Task):
         yield alignment_jobs
 
         merged_alignment = ProcessMergeBams(
-            bam_files="'".join(output_alignments),
+            bam_files=",".join(output_alignments),
             bam_file_out=self.raw_bam_file,
             user_shared_tmp_dir=SHARED_TMP_DIR,
             user_queue_flag=QUEUE_FLAG,
@@ -112,12 +114,14 @@ if __name__ == "__main__":
     PARSER.add_argument("--genome_idx", help="")
     PARSER.add_argument("--in_fastq_file", help="")
     PARSER.add_argument("--raw_bam_file", help="")
+    PARSER.add_argument("--fastq_chunk_size", default=1000000, help="")
     PARSER.add_argument("--shared_tmp_dir", help="")
 
     # Get the matching parameters from the command line
     ARGS = PARSER.parse_args()
 
     SHARED_TMP_DIR = ARGS.shared_tmp_dir
+    FASTQ_CHUNK_SIZE = ARGS.fastq_chunk_size
 
     luigi.build(
         [
