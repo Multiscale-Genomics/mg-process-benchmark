@@ -60,7 +60,7 @@ class ProcessAlnBwaSingle(LSFJobTask, TimeTaskBwaAln):
 
     def work(self):
         """
-        Worker function for splitting the FASTQ file into smaller chunks
+        Worker function for aligning single ended FASTQ reads using BWA ALN
 
         Parameters
         ----------

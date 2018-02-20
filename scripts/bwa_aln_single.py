@@ -55,7 +55,7 @@ class BwaAlnSingle(luigi.Task):
 
     def run(self):
         """
-        Worker function for splitting the FASTQ file into smaller chunks
+        Worker function for aligning single ended FASTQ reads using BWA ALN
 
         Parameters
         ----------
@@ -75,9 +75,7 @@ class BwaAlnSingle(luigi.Task):
             save_job_info=SAVE_JOB_INFO)
         yield split_fastq
 
-        print("INPUT OBJECT", split_fastq.output())
         outfiles = []
-
         with open(split_fastq.output().path, "r") as fastq_sub_files:
             for fastq_sub_file in fastq_sub_files:
                 outfiles.append(fastq_sub_file.strip())

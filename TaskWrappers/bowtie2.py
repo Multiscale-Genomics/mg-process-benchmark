@@ -37,9 +37,9 @@ class TimeTaskBowtie2(object):  # pylint: disable=too-few-public-methods
         """
         Print the length of time the task ran for (seconds)
         """
-        print('### PROCESSING TIME - Bowtie2 - Single ###: ' + str(processing_time))
+        print('### PROCESSING TIME - Bowtie2 ###: ' + str(processing_time))
 
-class ProcessAlignBowtie2(LSFJobTask, TimeTaskBowtie2):
+class ProcessAlignBowtie2Single(LSFJobTask, TimeTaskBowtie2):
 
     genome_fa = luigi.Parameter()
     genome_idx = luigi.Parameter()
@@ -56,6 +56,22 @@ class ProcessAlignBowtie2(LSFJobTask, TimeTaskBowtie2):
         return luigi.LocalTarget(self.output_bam)
 
     def work(self):
+        """
+        Worker function for aligning single ended FASTQ reads using Bowtie2
+
+        Parameters
+        ----------
+        genome_fa : str
+            Location of the FASTA file of the genome to align the reads to
+        genome_idx : str
+            Location of the index files in .tar.gz file prepared by the BWA
+            indexer
+        fastq_file : str
+            Location of the FASTQ file
+        output_bam : str
+            Location of the aligned reads in bam format
+        """
+
         line_count = 0
         with open(self.fastq_file, "r") as f_in:
             for line in f_in:
