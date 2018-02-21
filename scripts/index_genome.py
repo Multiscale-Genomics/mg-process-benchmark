@@ -32,42 +32,38 @@ MEMORY_FLAG_ALIGNMENT = "8192"
 QUEUE_FLAG = "production-rh7"
 SAVE_JOB_INFO = False
 
-FASTQ_CHUNK_SIZE = 1000000
-
-class BwaAlnSingle(luigi.Task):
+class IndexGenome(luigi.Task):
     """
-    Pipeline for aligning single end reads using Bowtie 2
+    Pipeline for indexing genomes provided in FASTA format
     """
 
     genome_fa = luigi.Parameter()
-    genome_idx = luigi.Parameter()
-    in_fastq_file = luigi.Parameter()
-    raw_bam_file = luigi.Parameter()
 
     def output(self):
         """
         Returns
         -------
-        output : luigi.LocalTarget()
-            Location of the merged aligned reads in bam format
+        output : list
+            luigi.LocalTarget() - Location of the Bowtie2 index
+            luigi.LocalTarget() - Location of the BWA index
+            luigi.LocalTarget() - Location of the GEM formatted FASTA file
+            luigi.LocalTarget() - Location of the GEM index
         """
-        return luigi.LocalTarget(self.raw_bam_file)
+        return [
+            luigi.LocalTarget(self.genome_fa + ".bwt.tar.gz"),
+            luigi.LocalTarget(self.genome_fa + ".bwa.tar.gz"),
+            luigi.LocalTarget(self.genome_fa.replace(".fasta", ".gem.fasta")),
+            luigi.LocalTarget(self.genome_fa + ".gem.tar.gz")
+        ]
 
     def run(self):
         """
-        Worker function for aligning single ended FASTQ reads using Bowtie2
+        Worker function for generating indexes for a given genomein FASTA format
 
         Parameters
         ----------
         genome_fa : str
-            Location of the FASTA file of the genome to align the reads to
-        genome_idx : str
-            Location of the index files in .tar.gz file prepared by the BWA
-            indexer
-        in_fastq_file : str
-            Location of the FASTQ file
-        raw_bam_file : str
-            Location of the aligned reads in bam format
+            Location of the FASTA file of the genome to generate indexes for
         """
         index_jobs = []
         index = ProcessIndexBowtie2(
@@ -98,7 +94,7 @@ class BwaAlnSingle(luigi.Task):
 
 if __name__ == "__main__":
     # Set up the command line parameters
-    PARSER = argparse.ArgumentParser(description="Bowtie2 Single Ended Pipeline Wrapper")
+    PARSER = argparse.ArgumentParser(description="Genome indexer")
     PARSER.add_argument("--genome_fa", help="")
     PARSER.add_argument("--shared_tmp_dir", help="")
 
@@ -110,7 +106,7 @@ if __name__ == "__main__":
 
     luigi.build(
         [
-            BwaAlnSingle(
+            IndexGenome(
                 genome_fa=ARGS.genome_fa
             )
         ],
