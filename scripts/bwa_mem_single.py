@@ -27,8 +27,8 @@ from TaskWrappers.bam_merge import ProcessMergeBams
 
 
 SHARED_TMP_DIR = ""
-RESOURCE_FLAG_ALIGNMENT = "mem=8192"
-MEMORY_FLAG_ALIGNMENT = "8192"
+RESOURCE_FLAG_ALIGNMENT = "mem=16384"
+MEMORY_FLAG_ALIGNMENT = "16384"
 QUEUE_FLAG = "production-rh7"
 SAVE_JOB_INFO = False
 
