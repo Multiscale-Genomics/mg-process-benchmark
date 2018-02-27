@@ -34,7 +34,7 @@ SAVE_JOB_INFO = False
 
 FASTQ_CHUNK_SIZE = 1000000
 
-class BwaAlnSingle(luigi.Task):
+class Bowtie2Single(luigi.Task):
     """
     Pipeline for aligning single end reads using Bowtie 2
     """
@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
     luigi.build(
         [
-            BwaAlnSingle(
+            Bowtie2Single(
                 genome_fa=ARGS.genome_fa,
                 genome_idx=ARGS.genome_idx,
                 in_fastq_file=ARGS.in_fastq_file,
