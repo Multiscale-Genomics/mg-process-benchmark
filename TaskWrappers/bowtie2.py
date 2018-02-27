@@ -72,11 +72,6 @@ class ProcessAlignBowtie2Single(LSFJobTask, TimeTaskBowtie2):
             Location of the aligned reads in bam format
         """
 
-        line_count = 0
-        with open(self.fastq_file, "r") as f_in:
-            for line in f_in:
-                line_count += 1
-
         bowtie2_handle = bowtie2AlignerTool({"no-untar" : True})
         bowtie2_handle.bowtie2_aligner_single(
             self.genome_fa,
@@ -122,11 +117,6 @@ class ProcessAlignBowtie2Paired(LSFJobTask, TimeTaskBowtie2):
         output_bam : str
             Location of the aligned reads in bam format
         """
-
-        line_count = 0
-        with open(self.fastq_file, "r") as f_in:
-            for line in f_in:
-                line_count += 1
 
         bowtie2_handle = bowtie2AlignerTool({"no-untar" : True})
         bowtie2_handle.bowtie2_aligner_paired(

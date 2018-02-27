@@ -121,4 +121,6 @@ class ProcessSplitFastQPaired(LSFJobTask, TimeTaskMixin):
         root_name = self.in_fastq_file_1.split("/")
         with open("/".join(root_name[0:-1]) + "/tmp/fastq_file_log.txt", "w") as f_out:
             for fastq_file in results:
-                f_out.write("/".join(root_name[0:-1]) + "/tmp/" + fastq_file[0] + "\n")
+                file_1 = "/".join(root_name[0:-1]) + "/tmp/" + fastq_file[0]
+                file_2 = "/".join(root_name[0:-1]) + "/tmp/" + fastq_file[1]
+                f_out.write(file_1 + "\t" + file_2 + "\n")
