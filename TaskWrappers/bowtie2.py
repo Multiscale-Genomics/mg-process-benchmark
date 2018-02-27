@@ -88,3 +88,55 @@ class ProcessAlignBowtie2Single(LSFJobTask, TimeTaskBowtie2):
 
         bam_handle = bamUtilsTask()
         bam_handle.bam_sort(self.output_bam)
+
+class ProcessAlignBowtie2Paired(LSFJobTask, TimeTaskBowtie2):
+
+    genome_fa = luigi.Parameter()
+    genome_idx = luigi.Parameter()
+    fastq_file_1 = luigi.Parameter()
+    fastq_file_2 = luigi.Parameter()
+    output_bam = luigi.Parameter()
+
+    def output(self):
+        """
+        Returns
+        -------
+        output : luigi.LocalTarget()
+            Location of the aligned reads in bam format
+        """
+        return luigi.LocalTarget(self.output_bam)
+
+    def work(self):
+        """
+        Worker function for aligning single ended FASTQ reads using Bowtie2
+
+        Parameters
+        ----------
+        genome_fa : str
+            Location of the FASTA file of the genome to align the reads to
+        genome_idx : str
+            Location of the index files in .tar.gz file prepared by the BWA
+            indexer
+        fastq_file : str
+            Location of the FASTQ file
+        output_bam : str
+            Location of the aligned reads in bam format
+        """
+
+        line_count = 0
+        with open(self.fastq_file, "r") as f_in:
+            for line in f_in:
+                line_count += 1
+
+        bowtie2_handle = bowtie2AlignerTool({"no-untar" : True})
+        bowtie2_handle.bowtie2_aligner_paired(
+            self.genome_fa,
+            self.fastq_file_1,
+            self.fastq_file_2,
+            self.output_bam,
+            self.genome_idx,
+            {}
+        )
+
+        bam_handle = bamUtilsTask()
+        bam_handle.bam_sort(self.output_bam)

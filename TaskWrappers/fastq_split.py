@@ -77,3 +77,48 @@ class ProcessSplitFastQSingle(LSFJobTask, TimeTaskMixin):
         with open("/".join(root_name[0:-1]) + "/tmp/fastq_file_log.txt", "w") as f_out:
             for fastq_file in results:
                 f_out.write("/".join(root_name[0:-1]) + "/tmp/" + fastq_file[0] + "\n")
+
+class ProcessSplitFastQPaired(LSFJobTask, TimeTaskMixin):
+    """
+    Tool wrapper for splitting FASTQ files into a defined chunk size.
+    """
+
+    in_fastq_file_1 = luigi.Parameter()
+    in_fastq_file_2 = luigi.Parameter()
+    fastq_chunk_size = luigi.IntParameter()
+    out_fastq_files = []
+
+    def output(self):
+        """
+        Returns
+        -------
+        output : luigi.LocalTarget()
+            Location of the fastq directory. List of the generated fastq files
+        """
+        root_name = self.in_fastq_file_1.split("/")
+        return luigi.LocalTarget("/".join(root_name[0:-1]) + "/tmp/fastq_file_log.txt")
+
+    def work(self):
+        """
+        Worker function for splitting the FASTQ file into smaller chunks
+
+        Parameters
+        ----------
+        in_fastq_file_1 : str
+            Location of the FASTQ file to split
+        in_fastq_file_2 : str
+            Location of the FASTQ file to split
+        fastq_chunk_size : int
+            Number of reads that each FASTQ chunk should contain
+        """
+        fqs = fastq_splitter({
+            "fastq_chunk_size" : self.fastq_chunk_size,
+            "no-untar" : True
+        })
+        results = fqs.paired_splitter(
+            self.in_fastq_file_1, self.in_fastq_file_2, self.in_fastq_file_1 + ".tar.gz")
+
+        root_name = self.in_fastq_file_1.split("/")
+        with open("/".join(root_name[0:-1]) + "/tmp/fastq_file_log.txt", "w") as f_out:
+            for fastq_file in results:
+                f_out.write("/".join(root_name[0:-1]) + "/tmp/" + fastq_file[0] + "\n")
