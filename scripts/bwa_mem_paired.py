@@ -82,7 +82,7 @@ class BwaAlnSingle(luigi.Task):
         outfiles = []
         with open(split_fastq.output().path, "r") as fastq_sub_files:
             for fastq_sub_file in fastq_sub_files:
-                outfiles.append(fastq_sub_file.strip())
+                outfiles.append(fastq_sub_file.strip().split("\t"))
 
         output_alignments = []
         alignment_jobs = []
