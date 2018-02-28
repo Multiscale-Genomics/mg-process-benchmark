@@ -31,6 +31,7 @@ RESOURCE_FLAG_ALIGNMENT = "mem=8192"
 MEMORY_FLAG_ALIGNMENT = "8192"
 QUEUE_FLAG = "production-rh7"
 SAVE_JOB_INFO = False
+RUN_TIME_FLAG = 600
 
 class IndexGenome(luigi.Task):
     """
@@ -50,7 +51,7 @@ class IndexGenome(luigi.Task):
             luigi.LocalTarget() - Location of the GEM index
         """
         return [
-            luigi.LocalTarget(self.genome_fa + ".bwt.tar.gz"),
+            luigi.LocalTarget(self.genome_fa + ".bt2.tar.gz"),
             luigi.LocalTarget(self.genome_fa + ".bwa.tar.gz"),
             luigi.LocalTarget(self.genome_fa.replace(".fasta", ".gem.fasta")),
             luigi.LocalTarget(self.genome_fa + ".gem.tar.gz")
@@ -68,10 +69,10 @@ class IndexGenome(luigi.Task):
         index_jobs = []
         index = ProcessIndexBowtie2(
             genome_fa=self.genome_fa,
-            genome_idx=self.genome_fa + ".bwt.tar.gz",
+            genome_idx=self.genome_fa + ".bt2.tar.gz",
             n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
             resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
-            queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO)
+            queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO, runtime_flag=RUN_TIME_FLAG)
         index_jobs.append(index)
 
         index = ProcessIndexBwa(
@@ -79,7 +80,7 @@ class IndexGenome(luigi.Task):
             genome_idx=self.genome_fa + ".bwa.tar.gz",
             n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
             resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
-            queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO)
+            queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO, runtime_flag=RUN_TIME_FLAG)
         index_jobs.append(index)
 
         index = ProcessIndexGem(
@@ -87,7 +88,7 @@ class IndexGenome(luigi.Task):
             genome_idx=self.genome_fa + ".gem.tar.gz",
             n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
             resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
-            queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO)
+            queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO, runtime_flag=RUN_TIME_FLAG)
         index_jobs.append(index)
 
         yield index_jobs
