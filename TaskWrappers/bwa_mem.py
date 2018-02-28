@@ -74,11 +74,6 @@ class ProcessMemBwaSingle(LSFJobTask, TimeTaskBwaMem):
         output_bam : str
             Location of the aligned reads in bam format
         """
-        line_count = 0
-        with open(self.fastq_file, "r") as f_in:
-            for line in f_in:
-                line_count += 1
-
         bwa_handle = bwaAlignerMEMTool({"no-untar" : True})
         bwa_handle.bwa_aligner_single(
             self.genome_fa,
@@ -129,11 +124,6 @@ class ProcessMemBwaPaired(LSFJobTask, TimeTaskBwaMem):
         output_bam : str
             Location of the aligned reads in bam format
         """
-        line_count = 0
-        with open(self.fastq_file, "r") as f_in:
-            for line in f_in:
-                line_count += 1
-
         bwa_handle = bwaAlignerMEMTool({"no-untar" : True})
         bwa_handle.bwa_aligner_paired(
             self.genome_fa,

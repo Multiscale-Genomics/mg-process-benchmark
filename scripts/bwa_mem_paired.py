@@ -21,27 +21,28 @@ import argparse
 
 import luigi
 
-from TaskWrappers.fastq_split import ProcessSplitFastQSingle
-from TaskWrappers.bowtie2 import ProcessAlignBowtie2Single
+from TaskWrappers.fastq_split import ProcessSplitFastQPaired
+from TaskWrappers.bwa_mem import ProcessMemBwaPaired
 from TaskWrappers.bam_merge import ProcessMergeBams
 
 
 SHARED_TMP_DIR = ""
-RESOURCE_FLAG_ALIGNMENT = "mem=8192"
-MEMORY_FLAG_ALIGNMENT = "8192"
+RESOURCE_FLAG_ALIGNMENT = "mem=16384"
+MEMORY_FLAG_ALIGNMENT = "16384"
 QUEUE_FLAG = "production-rh7"
 SAVE_JOB_INFO = False
 
 FASTQ_CHUNK_SIZE = 1000000
 
-class Bowtie2Single(luigi.Task):
+class BwaAlnSingle(luigi.Task):
     """
-    Pipeline for aligning single end reads using Bowtie 2
+    Pipeline for aligning single end reads using BWA MEM
     """
 
     genome_fa = luigi.Parameter()
     genome_idx = luigi.Parameter()
-    in_fastq_file = luigi.Parameter()
+    in_fastq_file_1 = luigi.Parameter()
+    in_fastq_file_2 = luigi.Parameter()
     raw_bam_file = luigi.Parameter()
 
     def output(self):
@@ -55,7 +56,7 @@ class Bowtie2Single(luigi.Task):
 
     def run(self):
         """
-        Worker function for aligning single ended FASTQ reads using Bowtie2
+        Worker function for aligning single ended FASTQ reads using BWA MEM
 
         Parameters
         ----------
@@ -64,13 +65,16 @@ class Bowtie2Single(luigi.Task):
         genome_idx : str
             Location of the index files in .tar.gz file prepared by the BWA
             indexer
-        in_fastq_file : str
+        in_fastq_file_1 : str
+            Location of the FASTQ file
+        in_fastq_file_2 : str
             Location of the FASTQ file
         raw_bam_file : str
             Location of the aligned reads in bam format
         """
-        split_fastq = ProcessSplitFastQSingle(
-            in_fastq_file=self.in_fastq_file, fastq_chunk_size=FASTQ_CHUNK_SIZE,
+        split_fastq = ProcessSplitFastQPaired(
+            in_fastq_file_1=self.in_fastq_file_1, in_fastq_file_2=self.in_fastq_file_2,
+            fastq_chunk_size=FASTQ_CHUNK_SIZE,
             n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR, queue_flag=QUEUE_FLAG,
             save_job_info=SAVE_JOB_INFO)
         yield split_fastq
@@ -78,16 +82,17 @@ class Bowtie2Single(luigi.Task):
         outfiles = []
         with open(split_fastq.output().path, "r") as fastq_sub_files:
             for fastq_sub_file in fastq_sub_files:
-                outfiles.append(fastq_sub_file.strip())
+                outfiles.append(fastq_sub_file.strip().split("\t"))
 
         output_alignments = []
         alignment_jobs = []
         for fastq_file in outfiles:
-            output_bam = fastq_file.replace(".fastq", ".bam")
-            alignment = ProcessAlignBowtie2Single(
+            output_bam = fastq_file[0].replace(".fastq", ".bam")
+            alignment = ProcessMemBwaPaired(
                 genome_fa=self.genome_fa,
                 genome_idx=self.genome_idx,
-                fastq_file=fastq_file,
+                fastq_file_1=fastq_file[0],
+                fastq_file_2=fastq_file[1],
                 output_bam=output_bam,
                 n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
                 resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
@@ -107,10 +112,11 @@ class Bowtie2Single(luigi.Task):
 
 if __name__ == "__main__":
     # Set up the command line parameters
-    PARSER = argparse.ArgumentParser(description="Bowtie2 Single Ended Pipeline Wrapper")
+    PARSER = argparse.ArgumentParser(description="BWA ALN Single Ended Pipeline Wrapper")
     PARSER.add_argument("--genome_fa", help="")
     PARSER.add_argument("--genome_idx", help="")
-    PARSER.add_argument("--in_fastq_file", help="")
+    PARSER.add_argument("--in_fastq_file_1", help="")
+    PARSER.add_argument("--in_fastq_file_2", help="")
     PARSER.add_argument("--raw_bam_file", help="")
     PARSER.add_argument("--fastq_chunk_size", default=1000000, help="")
     PARSER.add_argument("--shared_tmp_dir", help="")
@@ -123,10 +129,11 @@ if __name__ == "__main__":
 
     luigi.build(
         [
-            Bowtie2Single(
+            BwaAlnSingle(
                 genome_fa=ARGS.genome_fa,
                 genome_idx=ARGS.genome_idx,
-                in_fastq_file=ARGS.in_fastq_file,
+                in_fastq_file_1=ARGS.in_fastq_file_1,
+                in_fastq_file_2=ARGS.in_fastq_file_2,
                 raw_bam_file=ARGS.raw_bam_file,
             )
         ],

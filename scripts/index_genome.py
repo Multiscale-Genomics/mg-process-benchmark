@@ -103,7 +103,6 @@ if __name__ == "__main__":
     ARGS = PARSER.parse_args()
 
     SHARED_TMP_DIR = ARGS.shared_tmp_dir
-    FASTQ_CHUNK_SIZE = ARGS.fastq_chunk_size
 
     luigi.build(
         [
