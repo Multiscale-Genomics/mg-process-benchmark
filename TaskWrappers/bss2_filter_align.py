@@ -24,6 +24,7 @@ from luigi.contrib.lsf import LSFJobTask
 
 from tool.bs_seeker_aligner import bssAlignerTool
 from tool.bs_seeker_filter import filterReadsTool
+from tool.bam_utils import bamUtilsTask
 
 # logger = logging.getLogger('luigi-interface')
 
@@ -44,6 +45,10 @@ class ProcessBSSeekerFilterAlignSingle(LSFJobTask, TimeTaskBSSeekerFilterAlign):
     genome_fa = luigi.Parameter()
     genome_idx = luigi.Parameter()
     fastq_file = luigi.Parameter()
+    fastq_filtered = luigi.Parameter()
+    aligner = luigi.Parameter()
+    aligner_path = luigi.Parameter()
+    bss_path = luigi.Parameter()
     output_bam = luigi.Parameter()
 
     def output(self):
@@ -72,19 +77,20 @@ class ProcessBSSeekerFilterAlignSingle(LSFJobTask, TimeTaskBSSeekerFilterAlign):
             Location of the aligned reads in bam format
         """
 
-        frt = filterReadsTool(self.configuration)
-        fastq1f, filter1_meta = frt.run(
-            {"fastq": input_files["fastq1"]},
-            {"fastq": metadata["fastq1"]},
-            {"fastq_filtered": output_files["fastq1_filtered"]}
+        frt = filterReadsTool()
+        frt.bss_seeker_filter(
+            self.fastq_file,
+            self.fastq_filtered,
+            self.bss_path
         )
 
-        bss_aligner = bssAlignerTool(self.configuration)
-        aligner_input_files = {
-            "genome" : input_files["genome"],
-            "fastq1" : fastq1f["fastq_filtered"],
-            "fastq2" : fastq2f["fastq_filtered"]
-        }
+        bss_aligner = bssAlignerTool({"no-untar" : True})
+        bss_aligner.bs_seeker_aligner_single(
+            self.fastq_filtered,
+            self.aligner, self.aligner_path, self.bss_path, {},
+            self.genome_fa, self.genome_idx,
+            self.output_bam
+        )
 
         bam_handle = bamUtilsTask()
         bam_handle.bam_sort(self.output_bam)
@@ -95,7 +101,16 @@ class ProcessBSSeekerFilterAlignPaired(LSFJobTask, TimeTaskBSSeekerFilterAlign):
     genome_idx = luigi.Parameter()
     fastq_file_1 = luigi.Parameter()
     fastq_file_2 = luigi.Parameter()
+    fastq_filtered_1 = luigi.Parameter()
+    fastq_filtered_2 = luigi.Parameter()
+    aligner = luigi.Parameter()
+    aligner_path = luigi.Parameter()
+    bss_path = luigi.Parameter()
     output_bam = luigi.Parameter()
+
+    def _fliter_reads_mp(fastq_in, fastq_out, filter_path):
+        frt = filterReadsTool()
+        frt.bss_seeker_filter(fastq_in, fastq_out, filter_path)
 
     def output(self):
         """
@@ -123,14 +138,26 @@ class ProcessBSSeekerFilterAlignPaired(LSFJobTask, TimeTaskBSSeekerFilterAlign):
             Location of the aligned reads in bam format
         """
 
-        bowtie2_handle = bowtie2AlignerTool({"no-untar" : True})
-        bowtie2_handle.bowtie2_aligner_paired(
-            self.genome_fa,
-            self.fastq_file_1,
-            self.fastq_file_2,
-            self.output_bam,
-            self.genome_idx,
-            {}
+        import multiprocessing
+
+        f1_proc = multiprocessing.Process(
+            name='fastq_1', target=self._fliter_reads_mp,
+            args=(self.fastq_file_1, self.fastq_filtered_1, self.bss_path)
+        )
+        f2_proc = multiprocessing.Process(
+            name='fastq_2', target=self._fliter_reads_mp,
+            args=(self.fastq_file_2, self.fastq_filtered_2, self.bss_path)
+        )
+
+        f1_proc.join()
+        f2_proc.join()
+
+        bss_aligner = bssAlignerTool({"no-untar" : True})
+        bss_aligner.bs_seeker_aligner(
+            self.fastq_filtered_1, self.fastq_filtered_2,
+            self.aligner, self.aligner_path, self.bss_path, {},
+            self.genome_fa, self.genome_idx,
+            self.output_bam
         )
 
         bam_handle = bamUtilsTask()

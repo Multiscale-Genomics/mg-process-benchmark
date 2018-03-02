@@ -22,7 +22,7 @@ import argparse
 import luigi
 
 from TaskWrappers.fastq_split import ProcessSplitFastQSingle
-from TaskWrappers.bowtie2 import ProcessAlignBowtie2Single
+from TaskWrappers.bss2_filter_align import ProcessBSSeekerFilterAlignSingle
 from TaskWrappers.bam_merge import ProcessMergeBams
 
 
@@ -43,6 +43,9 @@ class Bowtie2Single(luigi.Task):
     genome_idx = luigi.Parameter()
     in_fastq_file = luigi.Parameter()
     raw_bam_file = luigi.Parameter()
+    aligner = luigi.Parameter()
+    aligner_path = luigi.Parameter()
+    bss_path = luigi.Parameter()
 
     def output(self):
         """
@@ -83,11 +86,16 @@ class Bowtie2Single(luigi.Task):
         output_alignments = []
         alignment_jobs = []
         for fastq_file in outfiles:
+            fastq_filtered = fastq_file.replace(".fastq", ".filtered.fastq")
             output_bam = fastq_file.replace(".fastq", ".bam")
-            alignment = ProcessAlignBowtie2Single(
+            alignment = ProcessBSSeekerFilterAlignSingle(
                 genome_fa=self.genome_fa,
                 genome_idx=self.genome_idx,
                 fastq_file=fastq_file,
+                fastq_filtered=fastq_filtered,
+                aligner=self.aligner,
+                aligner_path=self.aligner_path,
+                bss_path=self.bss_path,
                 output_bam=output_bam,
                 n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
                 resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
@@ -112,6 +120,9 @@ if __name__ == "__main__":
     PARSER.add_argument("--genome_idx", help="")
     PARSER.add_argument("--in_fastq_file", help="")
     PARSER.add_argument("--raw_bam_file", help="")
+    PARSER.add_argument("--aligner", help="")
+    PARSER.add_argument("--aligner_path", help="")
+    PARSER.add_argument("--bss_path", help="")
     PARSER.add_argument("--fastq_chunk_size", default=1000000, help="")
     PARSER.add_argument("--shared_tmp_dir", help="")
 
@@ -128,6 +139,9 @@ if __name__ == "__main__":
                 genome_idx=ARGS.genome_idx,
                 in_fastq_file=ARGS.in_fastq_file,
                 raw_bam_file=ARGS.raw_bam_file,
+                aligner=ARGS.aligner,
+                aligner_path=ARGS.aligner_path,
+                bss_path=ARGS.bss_path,
             )
         ],
         local_scheduler=True, workers=250)
