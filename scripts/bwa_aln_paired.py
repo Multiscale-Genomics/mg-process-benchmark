@@ -32,7 +32,7 @@ MEMORY_FLAG_ALIGNMENT = "16384"
 QUEUE_FLAG = "production-rh7"
 SAVE_JOB_INFO = False
 
-FASTQ_CHUNK_SIZE=1000000
+FASTQ_CHUNK_SIZE = 1000000
 
 class BwaAlnSingle(luigi.Task):
     """
