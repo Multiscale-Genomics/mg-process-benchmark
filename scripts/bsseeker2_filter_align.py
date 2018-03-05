@@ -21,8 +21,8 @@ import argparse
 
 import luigi
 
-from TaskWrappers.fastq_split import ProcessSplitFastQSingle
-from TaskWrappers.bss2_filter_align import ProcessBSSeekerFilterAlignSingle
+from TaskWrappers.fastq_split import ProcessSplitFastQPaired
+from TaskWrappers.bss2_filter_align import ProcessBSSeekerFilterAlignPaired
 from TaskWrappers.bam_merge import ProcessMergeBams
 
 
@@ -34,14 +34,15 @@ SAVE_JOB_INFO = False
 
 FASTQ_CHUNK_SIZE = 1000000
 
-class Bowtie2Single(luigi.Task):
+class BSseeker2FilterAlign(luigi.Task):
     """
     Pipeline for aligning single end reads using Bowtie 2
     """
 
     genome_fa = luigi.Parameter()
     genome_idx = luigi.Parameter()
-    in_fastq_file = luigi.Parameter()
+    in_fastq_file_1 = luigi.Parameter()
+    in_fastq_file_2 = luigi.Parameter()
     raw_bam_file = luigi.Parameter()
     aligner = luigi.Parameter()
     aligner_path = luigi.Parameter()
@@ -72,27 +73,32 @@ class Bowtie2Single(luigi.Task):
         raw_bam_file : str
             Location of the aligned reads in bam format
         """
-        split_fastq = ProcessSplitFastQSingle(
-            in_fastq_file=self.in_fastq_file, fastq_chunk_size=FASTQ_CHUNK_SIZE,
+        split_fastq = ProcessSplitFastQPaired(
+            in_fastq_file_1=self.in_fastq_file_1, in_fastq_file_2=self.in_fastq_file_2,
+            fastq_chunk_size=FASTQ_CHUNK_SIZE,
             n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR, queue_flag=QUEUE_FLAG,
             save_job_info=SAVE_JOB_INFO)
         yield split_fastq
 
         outfiles = []
+
         with open(split_fastq.output().path, "r") as fastq_sub_files:
             for fastq_sub_file in fastq_sub_files:
-                outfiles.append(fastq_sub_file.strip())
+                outfiles.append(fastq_sub_file.strip().split("\t"))
 
         output_alignments = []
         alignment_jobs = []
-        for fastq_file in outfiles:
-            fastq_filtered = fastq_file.replace(".fastq", ".filtered.fastq")
-            output_bam = fastq_file.replace(".fastq", ".bam")
-            alignment = ProcessBSSeekerFilterAlignSingle(
+        for fastq_files in outfiles:
+            fastq_filtered_1 = fastq_files[0].replace(".fastq", ".filtered.fastq")
+            fastq_filtered_2 = fastq_files[1].replace(".fastq", ".filtered.fastq")
+            output_bam = fastq_files[0].replace(".fastq", ".bam")
+            alignment = ProcessBSSeekerFilterAlignPaired(
                 genome_fa=self.genome_fa,
                 genome_idx=self.genome_idx,
-                fastq_file=fastq_file,
-                fastq_filtered=fastq_filtered,
+                fastq_file_1=fastq_files[0],
+                fastq_file_2=fastq_files[1],
+                fastq_filtered_1=fastq_filtered_1,
+                fastq_filtered_2=fastq_filtered_2,
                 aligner=self.aligner,
                 aligner_path=self.aligner_path,
                 bss_path=self.bss_path,
@@ -118,7 +124,8 @@ if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description="Bowtie2 Single Ended Pipeline Wrapper")
     PARSER.add_argument("--genome_fa", help="")
     PARSER.add_argument("--genome_idx", help="")
-    PARSER.add_argument("--in_fastq_file", help="")
+    PARSER.add_argument("--in_fastq_file_1", help="")
+    PARSER.add_argument("--in_fastq_file_2", help="")
     PARSER.add_argument("--raw_bam_file", help="")
     PARSER.add_argument("--aligner", help="")
     PARSER.add_argument("--aligner_path", help="")
@@ -134,10 +141,11 @@ if __name__ == "__main__":
 
     luigi.build(
         [
-            Bowtie2Single(
+            BSseeker2FilterAlign(
                 genome_fa=ARGS.genome_fa,
                 genome_idx=ARGS.genome_idx,
-                in_fastq_file=ARGS.in_fastq_file,
+                in_fastq_file_1=ARGS.in_fastq_file_1,
+                in_fastq_file_2=ARGS.in_fastq_file_2,
                 raw_bam_file=ARGS.raw_bam_file,
                 aligner=ARGS.aligner,
                 aligner_path=ARGS.aligner_path,

@@ -17,6 +17,7 @@
 
 from __future__ import print_function
 
+import os
 # import logging
 import luigi
 
@@ -87,7 +88,7 @@ class ProcessBSSeekerFilterAlignSingle(LSFJobTask, TimeTaskBSSeekerFilterAlign):
         bss_aligner = bssAlignerTool({"no-untar" : True})
         bss_aligner.bs_seeker_aligner_single(
             self.fastq_filtered,
-            self.aligner, self.aligner_path, self.bss_path, {},
+            self.aligner, self.aligner_path, self.bss_path, [],
             self.genome_fa, self.genome_idx,
             self.output_bam
         )
@@ -96,6 +97,8 @@ class ProcessBSSeekerFilterAlignSingle(LSFJobTask, TimeTaskBSSeekerFilterAlign):
         bam_handle.bam_sort(self.output_bam)
 
 class ProcessBSSeekerFilterAlignPaired(LSFJobTask, TimeTaskBSSeekerFilterAlign):
+
+    retry_count = 1
 
     genome_fa = luigi.Parameter()
     genome_idx = luigi.Parameter()
@@ -108,9 +111,58 @@ class ProcessBSSeekerFilterAlignPaired(LSFJobTask, TimeTaskBSSeekerFilterAlign):
     bss_path = luigi.Parameter()
     output_bam = luigi.Parameter()
 
-    def _fliter_reads_mp(fastq_in, fastq_out, filter_path):
+    def _filter_reads_mp(self, fastq_in, fastq_out, filter_path):
         frt = filterReadsTool()
         frt.bss_seeker_filter(fastq_in, fastq_out, filter_path)
+
+    def _match_paired_fastq(self, fastq_1, fastq_2):
+        from tool.fastqreader import fastqreader
+
+        fqr = fastqreader()
+        fqr.openFastQ(fastq_1, fastq_2)
+        fqr.createOutputFiles('match')
+
+        record1 = fqr.next(1)
+        record2 = fqr.next(2)
+
+        count_r1 = 0
+        count_r2 = 0
+        count_r3 = 0
+
+        while fqr.eof(1) is False and fqr.eof(2) is False:
+            r1_id = record1["id"].split(" ")
+            r2_id = record2["id"].split(" ")
+
+            if r1_id[0] == r2_id[0]:
+                fqr.writeOutput(record1, 1)
+                fqr.writeOutput(record2, 2)
+
+                record1 = fqr.next(1)
+                record2 = fqr.next(2)
+
+                count_r1 += 1
+                count_r2 += 1
+                count_r3 += 1
+            elif r1_id[0] < r2_id[0]:
+                record1 = fqr.next(1)
+                count_r1 += 1
+            else:
+                record2 = fqr.next(2)
+                count_r2 += 1
+
+        fqr.closeFastQ()
+        fqr.closeOutputFiles()
+
+        with open(fqr.f1_output_file_loc, "rb") as f1_match:
+            with open(fastq_1, "wb") as f_old:
+                f_old.write(f1_match.read())
+
+        with open(fqr.f2_output_file_loc, "rb") as f2_match:
+            with open(fastq_2, "wb") as f_old:
+                f_old.write(f2_match.read())
+
+        os.remove(fqr.f1_output_file_loc)
+        os.remove(fqr.f2_output_file_loc)
 
     def output(self):
         """
@@ -141,21 +193,26 @@ class ProcessBSSeekerFilterAlignPaired(LSFJobTask, TimeTaskBSSeekerFilterAlign):
         import multiprocessing
 
         f1_proc = multiprocessing.Process(
-            name='fastq_1', target=self._fliter_reads_mp,
+            name='fastq_1', target=self._filter_reads_mp,
             args=(self.fastq_file_1, self.fastq_filtered_1, self.bss_path)
         )
         f2_proc = multiprocessing.Process(
-            name='fastq_2', target=self._fliter_reads_mp,
+            name='fastq_2', target=self._filter_reads_mp,
             args=(self.fastq_file_2, self.fastq_filtered_2, self.bss_path)
         )
+
+        f1_proc.start()
+        f2_proc.start()
 
         f1_proc.join()
         f2_proc.join()
 
+        self._match_paired_fastq(self.fastq_filtered_1, self.fastq_filtered_2)
+
         bss_aligner = bssAlignerTool({"no-untar" : True})
         bss_aligner.bs_seeker_aligner(
             self.fastq_filtered_1, self.fastq_filtered_2,
-            self.aligner, self.aligner_path, self.bss_path, {},
+            self.aligner, self.aligner_path, self.bss_path, [],
             self.genome_fa, self.genome_idx,
             self.output_bam
         )
