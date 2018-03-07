@@ -25,7 +25,8 @@ from luigi.contrib.lsf import LSFJobTask
 
 from tool.bs_seeker_aligner import bssAlignerTool
 from tool.bs_seeker_filter import filterReadsTool
-from tool.bam_utils import bamUtilsTask
+from tool.bam_utils import bamUtils
+from tool.fastq_utils import fastqUtils
 
 # logger = logging.getLogger('luigi-interface')
 
@@ -93,7 +94,7 @@ class ProcessBSSeekerFilterAlignSingle(LSFJobTask, TimeTaskBSSeekerFilterAlign):
             self.output_bam
         )
 
-        bam_handle = bamUtilsTask()
+        bam_handle = bamUtils()
         bam_handle.bam_sort(self.output_bam)
 
 class ProcessBSSeekerFilterAlignPaired(LSFJobTask, TimeTaskBSSeekerFilterAlign):
@@ -115,54 +116,8 @@ class ProcessBSSeekerFilterAlignPaired(LSFJobTask, TimeTaskBSSeekerFilterAlign):
         frt = filterReadsTool()
         frt.bss_seeker_filter(fastq_in, fastq_out, filter_path)
 
-    def _match_paired_fastq(self, fastq_1, fastq_2):
-        from tool.fastqreader import fastqreader
-
-        fqr = fastqreader()
-        fqr.openFastQ(fastq_1, fastq_2)
-        fqr.createOutputFiles('match')
-
-        record1 = fqr.next(1)
-        record2 = fqr.next(2)
-
-        count_r1 = 0
-        count_r2 = 0
-        count_r3 = 0
-
-        while fqr.eof(1) is False and fqr.eof(2) is False:
-            r1_id = record1["id"].split(" ")
-            r2_id = record2["id"].split(" ")
-
-            if r1_id[0] == r2_id[0]:
-                fqr.writeOutput(record1, 1)
-                fqr.writeOutput(record2, 2)
-
-                record1 = fqr.next(1)
-                record2 = fqr.next(2)
-
-                count_r1 += 1
-                count_r2 += 1
-                count_r3 += 1
-            elif r1_id[0] < r2_id[0]:
-                record1 = fqr.next(1)
-                count_r1 += 1
-            else:
-                record2 = fqr.next(2)
-                count_r2 += 1
-
-        fqr.closeFastQ()
-        fqr.closeOutputFiles()
-
-        with open(fqr.f1_output_file_loc, "rb") as f1_match:
-            with open(fastq_1, "wb") as f_old:
-                f_old.write(f1_match.read())
-
-        with open(fqr.f2_output_file_loc, "rb") as f2_match:
-            with open(fastq_2, "wb") as f_old:
-                f_old.write(f2_match.read())
-
-        os.remove(fqr.f1_output_file_loc)
-        os.remove(fqr.f2_output_file_loc)
+        fq_handle = fastqUtils()
+        fq_handle.fastq_sort_file(fastq_out)
 
     def output(self):
         """
@@ -207,7 +162,8 @@ class ProcessBSSeekerFilterAlignPaired(LSFJobTask, TimeTaskBSSeekerFilterAlign):
         f1_proc.join()
         f2_proc.join()
 
-        self._match_paired_fastq(self.fastq_filtered_1, self.fastq_filtered_2)
+        fq_handle = fastqUtils()
+        fq_handle.fastq_match_paired_ends(self.fastq_filtered_1, self.fastq_filtered_2)
 
         bss_aligner = bssAlignerTool({"no-untar" : True})
         bss_aligner.bs_seeker_aligner(
@@ -217,5 +173,5 @@ class ProcessBSSeekerFilterAlignPaired(LSFJobTask, TimeTaskBSSeekerFilterAlign):
             self.output_bam
         )
 
-        bam_handle = bamUtilsTask()
+        bam_handle = bamUtils()
         bam_handle.bam_sort(self.output_bam)

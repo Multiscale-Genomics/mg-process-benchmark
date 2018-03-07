@@ -29,6 +29,8 @@ from TaskWrappers.bam_merge import ProcessMergeBams
 SHARED_TMP_DIR = ""
 RESOURCE_FLAG_ALIGNMENT = "mem=8192"
 MEMORY_FLAG_ALIGNMENT = "8192"
+RESOURCE_FLAG_MERGE = "mem=16384"
+MEMORY_FLAG_MERGE = "16384"
 QUEUE_FLAG = "production-rh7"
 SAVE_JOB_INFO = False
 
@@ -104,7 +106,9 @@ class Bowtie2Paired(luigi.Task):
             bam_file_out=self.raw_bam_file,
             user_shared_tmp_dir=SHARED_TMP_DIR,
             user_queue_flag=QUEUE_FLAG,
-            user_save_job_info=SAVE_JOB_INFO
+            user_save_job_info=SAVE_JOB_INFO,
+            user_resource_flag=RESOURCE_FLAG_MERGE,
+            user_memory_flag=MEMORY_FLAG_MERGE
         )
         yield merged_alignment
 

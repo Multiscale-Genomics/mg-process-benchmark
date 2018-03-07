@@ -29,6 +29,8 @@ from TaskWrappers.bam_merge import ProcessMergeBams
 SHARED_TMP_DIR = ""
 RESOURCE_FLAG_ALIGNMENT = "mem=8192"
 MEMORY_FLAG_ALIGNMENT = "8192"
+RESOURCE_FLAG_MERGE = "mem=16384"
+MEMORY_FLAG_MERGE = "16384"
 QUEUE_FLAG = "production-rh7"
 SAVE_JOB_INFO = False
 
@@ -73,6 +75,7 @@ class BSseeker2FilterAlign(luigi.Task):
         raw_bam_file : str
             Location of the aligned reads in bam format
         """
+        print("### PROCESSING SPLITTER")
         split_fastq = ProcessSplitFastQPaired(
             in_fastq_file_1=self.in_fastq_file_1, in_fastq_file_2=self.in_fastq_file_2,
             fastq_chunk_size=FASTQ_CHUNK_SIZE,
@@ -83,15 +86,18 @@ class BSseeker2FilterAlign(luigi.Task):
         outfiles = []
 
         with open(split_fastq.output().path, "r") as fastq_sub_files:
+        # with open("data/SRR892982/tmp/fastq_file_log.txt", "r") as fastq_sub_files:
             for fastq_sub_file in fastq_sub_files:
                 outfiles.append(fastq_sub_file.strip().split("\t"))
 
+        print("### PROCESSING ALIGNMENTS")
         output_alignments = []
         alignment_jobs = []
         for fastq_files in outfiles:
+            output_bam = fastq_files[0].replace(".fastq", ".bam")
+            output_alignments.append(output_bam)
             fastq_filtered_1 = fastq_files[0].replace(".fastq", ".filtered.fastq")
             fastq_filtered_2 = fastq_files[1].replace(".fastq", ".filtered.fastq")
-            output_bam = fastq_files[0].replace(".fastq", ".bam")
             alignment = ProcessBSSeekerFilterAlignPaired(
                 genome_fa=self.genome_fa,
                 genome_idx=self.genome_idx,
@@ -106,18 +112,21 @@ class BSseeker2FilterAlign(luigi.Task):
                 n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
                 resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
                 queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO)
-            output_alignments.append(alignment.output().path)
             alignment_jobs.append(alignment)
         yield alignment_jobs
 
+        print("### PROCESSING MERGING BAMS")
         merged_alignment = ProcessMergeBams(
             bam_files=",".join(output_alignments),
             bam_file_out=self.raw_bam_file,
             user_shared_tmp_dir=SHARED_TMP_DIR,
             user_queue_flag=QUEUE_FLAG,
-            user_save_job_info=SAVE_JOB_INFO
+            user_save_job_info=SAVE_JOB_INFO,
+            user_resource_flag=RESOURCE_FLAG_MERGE,
+            user_memory_flag=MEMORY_FLAG_MERGE
         )
         yield merged_alignment
+
 
 if __name__ == "__main__":
     # Set up the command line parameters
