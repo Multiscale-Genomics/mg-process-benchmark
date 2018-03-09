@@ -17,6 +17,7 @@
 
 from __future__ import print_function
 
+import sys
 import argparse
 
 import luigi
@@ -39,6 +40,7 @@ class IndexGenome(luigi.Task):
     """
 
     genome_fa = luigi.Parameter()
+    user_python_path = luigi.Parameter()
 
     def output(self):
         """
@@ -72,7 +74,8 @@ class IndexGenome(luigi.Task):
             genome_idx=self.genome_fa + ".bt2.tar.gz",
             n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
             resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
-            queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO, runtime_flag=RUN_TIME_FLAG)
+            queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO, runtime_flag=RUN_TIME_FLAG,
+            extra_bsub_args=self.user_python_path)
         index_jobs.append(index)
 
         index = ProcessIndexBwa(
@@ -80,7 +83,8 @@ class IndexGenome(luigi.Task):
             genome_idx=self.genome_fa + ".bwa.tar.gz",
             n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
             resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
-            queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO, runtime_flag=RUN_TIME_FLAG)
+            queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO, runtime_flag=RUN_TIME_FLAG,
+            extra_bsub_args=self.user_python_path)
         index_jobs.append(index)
 
         index = ProcessIndexGem(
@@ -88,7 +92,8 @@ class IndexGenome(luigi.Task):
             genome_idx=self.genome_fa + ".gem.tar.gz",
             n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
             resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
-            queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO, runtime_flag=RUN_TIME_FLAG)
+            queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO, runtime_flag=RUN_TIME_FLAG,
+            extra_bsub_args=self.user_python_path)
         index_jobs.append(index)
 
         yield index_jobs
@@ -98,6 +103,7 @@ if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description="Genome indexer")
     PARSER.add_argument("--genome_fa", help="")
     PARSER.add_argument("--shared_tmp_dir", help="")
+    PARSER.add_argument("--python_path", default=sys.executable, help="")
 
     # Get the matching parameters from the command line
     ARGS = PARSER.parse_args()
@@ -107,7 +113,8 @@ if __name__ == "__main__":
     luigi.build(
         [
             IndexGenome(
-                genome_fa=ARGS.genome_fa
+                genome_fa=ARGS.genome_fa,
+                user_python_path=ARGS.python_path
             )
         ],
         local_scheduler=True, workers=250)

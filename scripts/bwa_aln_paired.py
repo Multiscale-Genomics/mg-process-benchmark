@@ -17,6 +17,7 @@
 
 from __future__ import print_function
 
+import sys
 import argparse
 
 import luigi
@@ -46,6 +47,8 @@ class BwaAlnSingle(luigi.Task):
     in_fastq_file_1 = luigi.Parameter()
     in_fastq_file_2 = luigi.Parameter()
     raw_bam_file = luigi.Parameter()
+    batch_size = luigi.IntParameter()
+    user_python_path = luigi.Parameter()
 
     def output(self):
         """
@@ -74,11 +77,12 @@ class BwaAlnSingle(luigi.Task):
         raw_bam_file : str
             Location of the aligned reads in bam format
         """
+        print("### PROCESSING SPLITTER")
         split_fastq = ProcessSplitFastQPaired(
             in_fastq_file_1=self.in_fastq_file_1, in_fastq_file_2=self.in_fastq_file_2,
             fastq_chunk_size=FASTQ_CHUNK_SIZE,
             n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR, queue_flag=QUEUE_FLAG,
-            save_job_info=SAVE_JOB_INFO)
+            save_job_info=SAVE_JOB_INFO, extra_bsub_args=self.user_python_path)
         yield split_fastq
 
         outfiles = []
@@ -98,7 +102,8 @@ class BwaAlnSingle(luigi.Task):
                 output_bam=output_bam,
                 n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
                 resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
-                queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO)
+                queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO,
+                extra_bsub_args=self.user_python_path)
             output_alignments.append(alignment.output().path)
             alignment_jobs.append(alignment)
         yield alignment_jobs
@@ -106,11 +111,13 @@ class BwaAlnSingle(luigi.Task):
         merged_alignment = ProcessMergeBams(
             bam_files=",".join(output_alignments),
             bam_file_out=self.raw_bam_file,
+            batch_size=self.batch_size,
             user_shared_tmp_dir=SHARED_TMP_DIR,
             user_queue_flag=QUEUE_FLAG,
             user_save_job_info=SAVE_JOB_INFO,
             user_resource_flag=RESOURCE_FLAG_MERGE,
-            user_memory_flag=MEMORY_FLAG_MERGE
+            user_memory_flag=MEMORY_FLAG_MERGE,
+            user_python_path=self.user_python_path
         )
         yield merged_alignment
 
@@ -122,8 +129,10 @@ if __name__ == "__main__":
     PARSER.add_argument("--in_fastq_file_1", help="")
     PARSER.add_argument("--in_fastq_file_2", help="")
     PARSER.add_argument("--raw_bam_file", help="")
+    PARSER.add_argument("--batch_bam_size", default=10, help="")
     PARSER.add_argument("--fastq_chunk_size", default=1000000, help="")
     PARSER.add_argument("--shared_tmp_dir", help="")
+    PARSER.add_argument("--python_path", default=sys.executable, help="")
 
     # Get the matching parameters from the command line
     ARGS = PARSER.parse_args()
@@ -139,6 +148,8 @@ if __name__ == "__main__":
                 in_fastq_file_1=ARGS.in_fastq_file_1,
                 in_fastq_file_2=ARGS.in_fastq_file_2,
                 raw_bam_file=ARGS.raw_bam_file,
+                batch_size=ARGS.batch_bam_size,
+                user_python_path=ARGS.python_path
             )
         ],
         local_scheduler=True, workers=250)

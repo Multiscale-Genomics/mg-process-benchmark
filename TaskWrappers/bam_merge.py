@@ -115,11 +115,13 @@ class ProcessMergeBams(luigi.Task):
 
     bam_files = luigi.Parameter()
     bam_file_out = luigi.Parameter()
+    batch_size = luigi.IntParameter()
     user_shared_tmp_dir = luigi.Parameter()
     user_queue_flag = luigi.Parameter()
     user_save_job_info = luigi.Parameter()
     user_resource_flag = luigi.Parameter()
     user_memory_flag = luigi.Parameter()
+    user_python_path = luigi.Parameter()
 
     def output(self):
         """
@@ -146,16 +148,16 @@ class ProcessMergeBams(luigi.Task):
 
         merge_round = -1
         while True:
-            print("FILES TO MERGE:", self.bam_files)
+            print("FILES TO MERGE:", bam_job_files)
             merge_round += 1
             if len(bam_job_files) > 1:
                 tmp_alignments = []
                 merge_jobs = []
 
                 current_list_len = len(bam_job_files)
-                for i in range(0, current_list_len-9, 10):  # pylint: disable=unused-variable
+                for i in range(0, current_list_len-(self.batch_size-1), self.batch_size):  # pylint: disable=unused-variable
                     bam_job_array = []
-                    for j in range(10):  # pylint: disable=unused-variable
+                    for j in range(self.batch_size):  # pylint: disable=unused-variable
                         bam_job_array.append(bam_job_files.pop(0))
 
                     if merge_round == 0:
@@ -171,7 +173,9 @@ class ProcessMergeBams(luigi.Task):
                         bam_file_out=bam_out,
                         n_cpu_flag=1, shared_tmp_dir=self.user_shared_tmp_dir,
                         resource_flag=self.user_resource_flag, memory_flag=self.user_memory_flag,
-                        queue_flag=self.user_queue_flag, save_job_info=self.user_save_job_info
+                        queue_flag=self.user_queue_flag, job_name_flag="bam_merger",
+                        save_job_info=self.user_save_job_info,
+                        extra_bsub_args=self.user_python_path
                     )
                     tmp_alignments.append(bam_out)
                     merge_jobs.append(merge_job)
@@ -190,7 +194,9 @@ class ProcessMergeBams(luigi.Task):
                         bam_file_out=bam_out,
                         n_cpu_flag=1, shared_tmp_dir=self.user_shared_tmp_dir,
                         resource_flag=self.user_resource_flag, memory_flag=self.user_memory_flag,
-                        queue_flag=self.user_queue_flag, save_job_info=self.user_save_job_info
+                        queue_flag=self.user_queue_flag, job_name_flag="bam_merger",
+                        save_job_info=self.user_save_job_info,
+                        extra_bsub_args=self.user_python_path
                     )
                     tmp_alignments.append(bam_out)
                     merge_jobs.append(merge_job)
@@ -207,6 +213,7 @@ class ProcessMergeBams(luigi.Task):
             bam_file=bam_job_files.pop(0),
             bam_file_out=self.bam_file_out,
             n_cpu_flag=1, shared_tmp_dir=self.user_shared_tmp_dir,
-            queue_flag=self.user_queue_flag, save_job_info=self.user_save_job_info
+            queue_flag=self.user_queue_flag, save_job_info=self.user_save_job_info,
+            extra_bsub_args=self.user_python_path
         )
         yield sort_job
