@@ -92,6 +92,7 @@ class BwaAlnSingle(luigi.Task):
             for fastq_sub_file in fastq_sub_files:
                 outfiles.append(fastq_sub_file.strip())
 
+        print("### PROCESSING ALIGNER")
         output_alignments = []
         alignment_jobs = []
         for fastq_file in outfiles:
@@ -110,6 +111,7 @@ class BwaAlnSingle(luigi.Task):
             alignment_jobs.append(alignment)
         yield alignment_jobs
 
+        print("### PROCESSING MERGER")
         merged_alignment = ProcessMergeBams(
             bam_files=",".join(output_alignments),
             bam_file_out=self.raw_bam_file,

@@ -26,19 +26,7 @@ from tool.bam_utils import bamUtils
 
 # logger = logging.getLogger('luigi-interface')
 
-class TimeTaskMixin(object):  # pylint: disable=too-few-public-methods
-    """
-    Timer object
-    """
-
-    @luigi.Task.event_handler(luigi.Event.PROCESSING_TIME)
-    def print_execution_time(self, processing_time):  # pylint: disable=no-self-use
-        """
-        Print the length of time the task ran for (seconds)
-        """
-        print('### PROCESSING TIME - Merging BAMs ###: ' + str(processing_time))
-
-class ProcessMergeBamsJob(LSFJobTask, TimeTaskMixin):
+class ProcessMergeBamsJob(LSFJobTask):
     """
     Tool wrapper for merging the bam files on the LSF cluster
     """
@@ -74,7 +62,7 @@ class ProcessMergeBamsJob(LSFJobTask, TimeTaskMixin):
         bam_handle.bam_merge([self.bam_file_out] + bam_job_files)
         # bam_handle.bam_copy(bam_job_files[0], self.bam_file_out)
 
-class ProcessSortBamJob(LSFJobTask, TimeTaskMixin):
+class ProcessSortBamJob(LSFJobTask):
     """
     Tool wrapper for merging the bam files on the LSF cluster
     """
@@ -213,7 +201,7 @@ class ProcessMergeBams(luigi.Task):
             bam_file=bam_job_files.pop(0),
             bam_file_out=self.bam_file_out,
             n_cpu_flag=1, shared_tmp_dir=self.user_shared_tmp_dir,
-            queue_flag=self.user_queue_flag, save_job_info=self.user_save_job_info,
-            extra_bsub_args=self.user_python_path
+            queue_flag=self.user_queue_flag, job_name_flag="bam_sort",
+            save_job_info=self.user_save_job_info, extra_bsub_args=self.user_python_path
         )
         yield sort_job

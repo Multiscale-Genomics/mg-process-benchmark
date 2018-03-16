@@ -30,19 +30,10 @@ from tool.fastq_utils import fastqUtils
 
 # logger = logging.getLogger('luigi-interface')
 
-class TimeTaskBSSeekerFilterAlign(object):  # pylint: disable=too-few-public-methods
+class ProcessBSSeekerFilterAlignSingle(LSFJobTask):
     """
-    Timer object
+    Filtering of FASTQ single-ended reads prior to alignment
     """
-
-    @luigi.Task.event_handler(luigi.Event.PROCESSING_TIME)
-    def print_execution_time(self, processing_time):  # pylint: disable=no-self-use
-        """
-        Print the length of time the task ran for (seconds)
-        """
-        print('### PROCESSING TIME - BS Seeker 2 Filter and Align ###: ' + str(processing_time))
-
-class ProcessBSSeekerFilterAlignSingle(LSFJobTask, TimeTaskBSSeekerFilterAlign):
 
     genome_fa = luigi.Parameter()
     genome_idx = luigi.Parameter()
@@ -98,6 +89,9 @@ class ProcessBSSeekerFilterAlignSingle(LSFJobTask, TimeTaskBSSeekerFilterAlign):
         bam_handle.bam_sort(self.output_bam)
 
 class ProcessBSSeekerFilterAlignPaired(LSFJobTask, TimeTaskBSSeekerFilterAlign):
+    """
+    Filtering of FASTQ paired-end reads prior to alignment
+    """
 
     retry_count = 1
 

@@ -23,19 +23,7 @@ from luigi.contrib.lsf import LSFJobTask
 
 from tool.bwa_indexer import bwaIndexerTool
 
-class TimeTaskBwaIndexer(object):  # pylint: disable=too-few-public-methods
-    """
-    Timer object
-    """
-
-    @luigi.Task.event_handler(luigi.Event.PROCESSING_TIME)
-    def print_execution_time(self, processing_time):  # pylint: disable=no-self-use
-        """
-        Print the length of time the task ran for (seconds)
-        """
-        print('### PROCESSING TIME - BWA Indexing ###: ' + str(processing_time))
-
-class ProcessIndexBwa(LSFJobTask, TimeTaskBwaIndexer):
+class ProcessIndexBwa(LSFJobTask):
     """
     Tool wrapper for generating a BWA Index
     """

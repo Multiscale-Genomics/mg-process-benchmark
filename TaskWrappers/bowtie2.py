@@ -27,19 +27,7 @@ from tool.bam_utils import bamUtilsTask
 
 # logger = logging.getLogger('luigi-interface')
 
-class TimeTaskBowtie2(object):  # pylint: disable=too-few-public-methods
-    """
-    Timer object
-    """
-
-    @luigi.Task.event_handler(luigi.Event.PROCESSING_TIME)
-    def print_execution_time(self, processing_time):  # pylint: disable=no-self-use
-        """
-        Print the length of time the task ran for (seconds)
-        """
-        print('### PROCESSING TIME - Bowtie2 ###: ' + str(processing_time))
-
-class ProcessAlignBowtie2Single(LSFJobTask, TimeTaskBowtie2):
+class ProcessAlignBowtie2Single(LSFJobTask):
 
     genome_fa = luigi.Parameter()
     genome_idx = luigi.Parameter()
@@ -84,7 +72,7 @@ class ProcessAlignBowtie2Single(LSFJobTask, TimeTaskBowtie2):
         bam_handle = bamUtilsTask()
         bam_handle.bam_sort(self.output_bam)
 
-class ProcessAlignBowtie2Paired(LSFJobTask, TimeTaskBowtie2):
+class ProcessAlignBowtie2Paired(LSFJobTask):
 
     genome_fa = luigi.Parameter()
     genome_idx = luigi.Parameter()

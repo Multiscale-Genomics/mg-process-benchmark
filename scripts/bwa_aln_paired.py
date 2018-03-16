@@ -37,7 +37,7 @@ SAVE_JOB_INFO = False
 
 FASTQ_CHUNK_SIZE = 1000000
 
-class BwaAlnSingle(luigi.Task):
+class BwaAlnPaired(luigi.Task):
     """
     Pipeline for aligning single end reads using BWA ALN
     """
@@ -82,18 +82,19 @@ class BwaAlnSingle(luigi.Task):
             in_fastq_file_1=self.in_fastq_file_1, in_fastq_file_2=self.in_fastq_file_2,
             fastq_chunk_size=FASTQ_CHUNK_SIZE,
             n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR, queue_flag=QUEUE_FLAG,
-            save_job_info=SAVE_JOB_INFO, extra_bsub_args=self.user_python_path)
+            job_name_flag="splitter", save_job_info=SAVE_JOB_INFO,
+            extra_bsub_args=self.user_python_path)
         yield split_fastq
 
         outfiles = []
         with open(split_fastq.output().path, "r") as fastq_sub_files:
             for fastq_sub_file in fastq_sub_files:
                 outfiles.append(fastq_sub_file.strip().split("\t"))
-
         output_alignments = []
         alignment_jobs = []
         for fastq_file in outfiles:
             output_bam = fastq_file[0].replace(".fastq", ".bam")
+            job_name = fastq_file[0].split("/")
             alignment = ProcessAlnBwaPaired(
                 genome_fa=self.genome_fa,
                 genome_idx=self.genome_idx,
@@ -102,7 +103,7 @@ class BwaAlnSingle(luigi.Task):
                 output_bam=output_bam,
                 n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
                 resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
-                queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO,
+                queue_flag=QUEUE_FLAG, job_name_flag=job_name[-1], save_job_info=SAVE_JOB_INFO,
                 extra_bsub_args=self.user_python_path)
             output_alignments.append(alignment.output().path)
             alignment_jobs.append(alignment)
@@ -123,7 +124,7 @@ class BwaAlnSingle(luigi.Task):
 
 if __name__ == "__main__":
     # Set up the command line parameters
-    PARSER = argparse.ArgumentParser(description="BWA ALN Single Ended Pipeline Wrapper")
+    PARSER = argparse.ArgumentParser(description="BWA ALN Paired End Pipeline Wrapper")
     PARSER.add_argument("--genome_fa", help="")
     PARSER.add_argument("--genome_idx", help="")
     PARSER.add_argument("--in_fastq_file_1", help="")
@@ -142,7 +143,7 @@ if __name__ == "__main__":
 
     luigi.build(
         [
-            BwaAlnSingle(
+            BwaAlnPaired(
                 genome_fa=ARGS.genome_fa,
                 genome_idx=ARGS.genome_idx,
                 in_fastq_file_1=ARGS.in_fastq_file_1,

@@ -27,19 +27,7 @@ from tool.bam_utils import bamUtilsTask
 
 # logger = logging.getLogger('luigi-interface')
 
-class TimeTaskBwaAln(object):  # pylint: disable=too-few-public-methods
-    """
-    Timer object
-    """
-
-    @luigi.Task.event_handler(luigi.Event.PROCESSING_TIME)
-    def print_execution_time(self, processing_time):  # pylint: disable=no-self-use
-        """
-        Print the length of time the task ran for (seconds)
-        """
-        print('### PROCESSING TIME - BWA ALN - Single ###: ' + str(processing_time))
-
-class ProcessAlnBwaSingle(LSFJobTask, TimeTaskBwaAln):
+class ProcessAlnBwaSingle(LSFJobTask):
     """
     Tool wrapper for aligning single end reads using BWA ALN
     """
@@ -86,7 +74,7 @@ class ProcessAlnBwaSingle(LSFJobTask, TimeTaskBwaAln):
         bam_handle = bamUtilsTask()
         bam_handle.bam_sort(self.output_bam)
 
-class ProcessAlnBwaPaired(LSFJobTask, TimeTaskBwaAln):
+class ProcessAlnBwaPaired(LSFJobTask):
     """
     Tool wrapper for aligning single end reads using BWA ALN
     """

@@ -24,19 +24,7 @@ from luigi.contrib.lsf import LSFJobTask
 
 from tool.fastq_splitter import fastq_splitter
 
-class TimeTaskMixin(object):  # pylint: disable=too-few-public-methods
-    """
-    Timer object
-    """
-
-    @luigi.Task.event_handler(luigi.Event.PROCESSING_TIME)
-    def print_execution_time(self, processing_time):  # pylint: disable=no-self-use
-        """
-        Print the length of time the task ran for (seconds)
-        """
-        print('### PROCESSING TIME - Split FASTQ ###: ' + str(processing_time))
-
-class ProcessSplitFastQSingle(LSFJobTask, TimeTaskMixin):
+class ProcessSplitFastQSingle(LSFJobTask):
     """
     Tool wrapper for splitting FASTQ files into a defined chunk size.
     """
@@ -78,7 +66,7 @@ class ProcessSplitFastQSingle(LSFJobTask, TimeTaskMixin):
             for fastq_file in results:
                 f_out.write("/".join(root_name[0:-1]) + "/tmp/" + fastq_file[0] + "\n")
 
-class ProcessSplitFastQPaired(LSFJobTask, TimeTaskMixin):
+class ProcessSplitFastQPaired(LSFJobTask):
     """
     Tool wrapper for splitting FASTQ files into a defined chunk size.
     """

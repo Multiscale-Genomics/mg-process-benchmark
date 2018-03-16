@@ -23,19 +23,7 @@ from luigi.contrib.lsf import LSFJobTask
 
 from tool.bowtie_indexer import bowtieIndexerTool
 
-class TimeTaskBowtie2Index(object):  # pylint: disable=too-few-public-methods
-    """
-    Timer object
-    """
-
-    @luigi.Task.event_handler(luigi.Event.PROCESSING_TIME)
-    def print_execution_time(self, processing_time):  # pylint: disable=no-self-use
-        """
-        Print the length of time the task ran for (seconds)
-        """
-        print('### PROCESSING TIME - Bowtie2 Indexing ###: ' + str(processing_time))
-
-class ProcessIndexBowtie2(LSFJobTask, TimeTaskBowtie2Index):
+class ProcessIndexBowtie2(LSFJobTask):
     """
     Tool wrapper for generating a Bowtie2 Index
     """

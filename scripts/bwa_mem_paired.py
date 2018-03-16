@@ -82,7 +82,7 @@ class BwaAlnSingle(luigi.Task):
             in_fastq_file_1=self.in_fastq_file_1, in_fastq_file_2=self.in_fastq_file_2,
             fastq_chunk_size=FASTQ_CHUNK_SIZE,
             n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR, queue_flag=QUEUE_FLAG,
-            save_job_info=SAVE_JOB_INFO,
+            job_name_flag="splitter", save_job_info=SAVE_JOB_INFO,
             extra_bsub_args=self.user_python_path)
         yield split_fastq
 
@@ -95,6 +95,7 @@ class BwaAlnSingle(luigi.Task):
         alignment_jobs = []
         for fastq_file in outfiles:
             output_bam = fastq_file[0].replace(".fastq", ".bam")
+            job_name = fastq_file[0].split("/")
             alignment = ProcessMemBwaPaired(
                 genome_fa=self.genome_fa,
                 genome_idx=self.genome_idx,
@@ -103,8 +104,8 @@ class BwaAlnSingle(luigi.Task):
                 output_bam=output_bam,
                 n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
                 resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
-                queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO,
-                extra_bsub_args=self.user_python_path)
+                queue_flag=QUEUE_FLAG, job_name_flag=job_name[-1],
+                save_job_info=SAVE_JOB_INFO, extra_bsub_args=self.user_python_path)
             output_alignments.append(alignment.output().path)
             alignment_jobs.append(alignment)
         yield alignment_jobs

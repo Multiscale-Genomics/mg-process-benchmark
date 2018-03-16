@@ -111,7 +111,7 @@ class Bowtie2Single(luigi.Task):
         merged_alignment = ProcessMergeBams(
             bam_files=",".join(output_alignments),
             bam_file_out=self.raw_bam_file,
-            batch_size=self.batch_size,,
+            batch_size=self.batch_size,
             user_shared_tmp_dir=SHARED_TMP_DIR,
             user_queue_flag=QUEUE_FLAG,
             user_save_job_info=SAVE_JOB_INFO,
