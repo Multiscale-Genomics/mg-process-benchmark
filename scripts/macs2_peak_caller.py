@@ -22,7 +22,7 @@ import argparse
 
 import luigi
 
-from TaskWrappers.macs2 import ProcessMacs2Nobgd
+from TaskWrappers.macs2 import ProcessMacs2bgd, ProcessMacs2Nobgd
 
 SHARED_TMP_DIR = ""
 RESOURCE_FLAG_ALIGNMENT = "mem=16384"
@@ -39,6 +39,7 @@ class macs2_nobgd(luigi.Task):
     """
 
     in_bam_file = luigi.Parameter()
+    in_bgd_bam_file = luigi.Parameter()
     macs2_params = luigi.Parameter()
     narrowPeak_file = luigi.Parameter()
     summits_file = luigi.Parameter()
@@ -77,6 +78,57 @@ class macs2_nobgd(luigi.Task):
             narrowPeak_file=self.narrowPeak_file, summits_file=self.summits_file,
             broadPeak_file=self.broadPeak_file, gappedPeak_file=self.gappedPeak_file,
             n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR, queue_flag=QUEUE_FLAG,
+            job_name_flag="macs2bgd", save_job_info=SAVE_JOB_INFO,
+            extra_bsub_args=self.user_python_path)
+        yield macs2_handle
+
+
+class macs2_bgd(luigi.Task):
+    """
+    Pipeline for aligning single end reads using BWA ALN
+    """
+
+    in_bam_file = luigi.Parameter()
+    in_bgd_bam_file = luigi.Parameter()
+    macs2_params = luigi.Parameter()
+    narrowPeak_file = luigi.Parameter()
+    summits_file = luigi.Parameter()
+    broadPeak_file = luigi.Parameter()
+    gappedPeak_file = luigi.Parameter()
+    user_python_path = luigi.Parameter()
+
+    def output(self):
+        """
+        Returns
+        -------
+        output : luigi.LocalTarget()
+            Location of the merged aligned reads in bam format
+        """
+        return [
+            luigi.LocalTarget(self.narrowPeak_file),
+            luigi.LocalTarget(self.summits_file),
+            luigi.LocalTarget(self.broadPeak_file),
+            luigi.LocalTarget(self.gappedPeak_file)
+        ]
+
+    def run(self):
+        """
+        Worker function for aligning single ended FASTQ reads using BWA ALN
+
+        Parameters
+        ----------
+        in_bam_file : str
+            Location of the bam file
+        out_bam_file : str
+            Location of the filtered bam file
+        """
+        print("### PROCESSING BAM FILE")
+        macs2_handle = ProcessMacs2bgd(
+            in_bam_file=self.in_bam_file, in_bgd_bam_file=self.in_bgd_bam_file,
+            macs2_params=self.macs2_params, narrowPeak_file=self.narrowPeak_file,
+            summits_file=self.summits_file, broadPeak_file=self.broadPeak_file,
+            gappedPeak_file=self.gappedPeak_file,
+            n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR, queue_flag=QUEUE_FLAG,
             job_name_flag="macs2", save_job_info=SAVE_JOB_INFO,
             extra_bsub_args=self.user_python_path)
         yield macs2_handle
@@ -86,6 +138,7 @@ if __name__ == "__main__":
     # Set up the command line parameters
     PARSER = argparse.ArgumentParser(description="BioBamBam Pipeline Wrapper")
     PARSER.add_argument("--in_bam_file", help="")
+    PARSER.add_argument("--in_bgd_bam_file", default=None, help="")
     PARSER.add_argument("--macs2_params", default="", help="")
     PARSER.add_argument("--narrowPeak_file", help="")
     PARSER.add_argument("--summits_file", help="")
@@ -99,13 +152,26 @@ if __name__ == "__main__":
 
     SHARED_TMP_DIR = ARGS.shared_tmp_dir
 
-    luigi.build(
-        [
-            macs2_nobgd(
-                in_bam_file=ARGS.in_bam_file, macs2_params=ARGS.macs2_params,
-                narrowPeak_file=ARGS.narrowPeak_file, summits_file=ARGS.summits_file,
-                broadPeak_file=ARGS.broadPeak_file, gappedPeak_file=ARGS.gappedPeak_file,
-                user_python_path=ARGS.python_path
-            )
-        ],
-        local_scheduler=True, workers=5)
+    if ARGS.in_bgd_bam_file is not None:
+        luigi.build(
+            [
+                macs2_bgd(
+                    in_bam_file=ARGS.in_bam_file, in_bgd_bam_file=ARGS.in_bgd_bam_file,
+                    macs2_params=ARGS.macs2_params, narrowPeak_file=ARGS.narrowPeak_file,
+                    summits_file=ARGS.summits_file, broadPeak_file=ARGS.broadPeak_file,
+                    gappedPeak_file=ARGS.gappedPeak_file,
+                    user_python_path=ARGS.python_path
+                )
+            ],
+            local_scheduler=True, workers=5)
+    else:
+        luigi.build(
+            [
+                macs2_nobgd(
+                    in_bam_file=ARGS.in_bam_file, macs2_params=ARGS.macs2_params,
+                    narrowPeak_file=ARGS.narrowPeak_file, summits_file=ARGS.summits_file,
+                    broadPeak_file=ARGS.broadPeak_file, gappedPeak_file=ARGS.gappedPeak_file,
+                    user_python_path=ARGS.python_path
+                )
+            ],
+            local_scheduler=True, workers=5)

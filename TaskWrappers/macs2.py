@@ -73,3 +73,54 @@ class ProcessMacs2Nobgd(LSFJobTask):
             self.narrowPeak_file, self.summits_file,
             self.broadPeak_file, self.gappedPeak_file
         )
+
+
+class ProcessMacs2bgd(LSFJobTask):
+    """
+    Tool wrapper for filtering bams using BioBamBam.
+    """
+
+    in_bam_file = luigi.Parameter()
+    in_bgd_bam_file = luigi.Parameter()
+    macs2_params = luigi.Parameter()
+    narrowPeak_file = luigi.Parameter()
+    summits_file = luigi.Parameter()
+    broadPeak_file = luigi.Parameter()
+    gappedPeak_file = luigi.Parameter()
+
+    def output(self):
+        """
+        Returns
+        -------
+        output : luigi.LocalTarget()
+            Location of the bam output file
+        """
+        return [
+            luigi.LocalTarget(self.narrowPeak_file),
+            luigi.LocalTarget(self.summits_file),
+            luigi.LocalTarget(self.broadPeak_file),
+            luigi.LocalTarget(self.gappedPeak_file)
+        ]
+
+    def work(self):
+        """
+        Worker function for filtering bam files using BioBamBam
+
+        Parameters
+        ----------
+        in_bam_file : str
+            Location of the bam file to filter
+        in_bam_file : str
+            Location of the filtered bam file
+        """
+        macs2_handle = macs2()
+
+        real_params = []
+        if len(self.macs2_params) > 0:
+            real_params = self.macs2_params.split(",")
+
+        macs2_handle.macs2_peak_calling(
+            "luigi_lsf", self.in_bam_file, self.in_bgd_bam_file, real_params,
+            self.narrowPeak_file, self.summits_file,
+            self.broadPeak_file, self.gappedPeak_file
+        )
