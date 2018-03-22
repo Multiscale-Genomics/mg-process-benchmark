@@ -100,4 +100,4 @@ if __name__ == "__main__":
                 user_python_path=ARGS.python_path
             )
         ],
-        local_scheduler=True, workers=100)
+        local_scheduler=True, workers=50)

@@ -37,6 +37,7 @@ SAVE_JOB_INFO = False
 
 FASTQ_CHUNK_SIZE = 1000000
 
+
 class BwaAlnSingle(luigi.Task):
     """
     Pipeline for aligning single end reads using BWA MEM
@@ -76,7 +77,8 @@ class BwaAlnSingle(luigi.Task):
         """
         print("### PROCESSING SPLITTER")
         split_fastq = ProcessSplitFastQSingle(
-            in_fastq_file=self.in_fastq_file, fastq_chunk_size=FASTQ_CHUNK_SIZE,
+            in_fastq_file=self.in_fastq_file,
+            fastq_chunk_size=FASTQ_CHUNK_SIZE,
             n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR, queue_flag=QUEUE_FLAG,
             job_name_flag="splitter", save_job_info=SAVE_JOB_INFO,
             extra_bsub_args=self.user_python_path)
@@ -84,7 +86,6 @@ class BwaAlnSingle(luigi.Task):
 
         outfiles = []
         with open(split_fastq.output().path, "r") as fastq_sub_files:
-        # with open("data/DRR000150/tmp/fastq_file_log.txt", "r") as fastq_sub_files:
             for fastq_sub_file in fastq_sub_files:
                 outfiles.append(fastq_sub_file.strip())
 
@@ -100,8 +101,9 @@ class BwaAlnSingle(luigi.Task):
                 fastq_file=fastq_file,
                 output_bam=output_bam,
                 n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
-                resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
-                queue_flag=QUEUE_FLAG, job_name_flag=job_name[-1], save_job_info=SAVE_JOB_INFO,
+                resource_flag=RESOURCE_FLAG_ALIGNMENT,
+                memory_flag=MEMORY_FLAG_ALIGNMENT, queue_flag=QUEUE_FLAG,
+                job_name_flag=job_name[-1], save_job_info=SAVE_JOB_INFO,
                 extra_bsub_args=self.user_python_path)
             output_alignments.append(alignment.output().path)
             alignment_jobs.append(alignment)
@@ -120,9 +122,11 @@ class BwaAlnSingle(luigi.Task):
         )
         yield merged_alignment
 
+
 if __name__ == "__main__":
     # Set up the command line parameters
-    PARSER = argparse.ArgumentParser(description="BWA ALN Single Ended Pipeline Wrapper")
+    PARSER = argparse.ArgumentParser(
+        description="BWA ALN Single Ended Pipeline Wrapper")
     PARSER.add_argument("--genome_fa", help="")
     PARSER.add_argument("--genome_idx", help="")
     PARSER.add_argument("--in_fastq_file", help="")
@@ -149,4 +153,4 @@ if __name__ == "__main__":
                 user_python_path=ARGS.python_path
             )
         ],
-        local_scheduler=True, workers=250)
+        local_scheduler=True, workers=50)
