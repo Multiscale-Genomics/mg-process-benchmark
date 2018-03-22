@@ -91,9 +91,16 @@ class ProcessSortBamJob(LSFJobTask):
         bam_file_out : str
             Location of the output bam file
         """
+        in_bam_path = self.bam_file.split("/")
+        out_bam_path = self.bam_file_out.split("/")
+
         bam_handle = bamUtils()
-        bam_handle.bam_sort(self.bam_file)
-        bam_handle.bam_copy(self.bam_file, self.bam_file_out)
+        bam_handle.bam_copy(self.bam_file, "/tmp/" + in_bam_path[-1])
+
+        bam_handle.bam_sort("/tmp/" + in_bam_path[-1])
+        bam_handle.bam_copy(
+            "/tmp/" + in_bam_path[-1],
+            "/tmp/" + out_bam_path[-1])
 
 class ProcessMergeBams(luigi.Task):
     """
