@@ -34,8 +34,8 @@ RESOURCE_FLAG_MERGE = "mem=16384"
 MEMORY_FLAG_MERGE = "16384"
 QUEUE_FLAG = "production-rh7"
 SAVE_JOB_INFO = False
-
 FASTQ_CHUNK_SIZE = 1000000
+
 
 class BSseeker2FilterAlign(luigi.Task):
     """
@@ -80,7 +80,8 @@ class BSseeker2FilterAlign(luigi.Task):
         """
         print("### PROCESSING SPLITTER")
         split_fastq = ProcessSplitFastQPaired(
-            in_fastq_file_1=self.in_fastq_file_1, in_fastq_file_2=self.in_fastq_file_2,
+            in_fastq_file_1=self.in_fastq_file_1,
+            in_fastq_file_2=self.in_fastq_file_2,
             fastq_chunk_size=FASTQ_CHUNK_SIZE,
             n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR, queue_flag=QUEUE_FLAG,
             save_job_info=SAVE_JOB_INFO, extra_bsub_args=self.user_python_path)
@@ -88,8 +89,8 @@ class BSseeker2FilterAlign(luigi.Task):
 
         outfiles = []
 
-        with open(split_fastq.output().path, "r") as fastq_sub_files:
         # with open("data/SRR892982/tmp/fastq_file_log.txt", "r") as fastq_sub_files:
+        with open(split_fastq.output().path, "r") as fastq_sub_files:
             for fastq_sub_file in fastq_sub_files:
                 outfiles.append(fastq_sub_file.strip().split("\t"))
 
@@ -113,7 +114,8 @@ class BSseeker2FilterAlign(luigi.Task):
                 bss_path=self.bss_path,
                 output_bam=output_bam,
                 n_cpu_flag=5, shared_tmp_dir=SHARED_TMP_DIR,
-                resource_flag=RESOURCE_FLAG_ALIGNMENT, memory_flag=MEMORY_FLAG_ALIGNMENT,
+                resource_flag=RESOURCE_FLAG_ALIGNMENT,
+                memory_flag=MEMORY_FLAG_ALIGNMENT,
                 queue_flag=QUEUE_FLAG, save_job_info=SAVE_JOB_INFO,
                 extra_bsub_args=self.user_python_path)
             alignment_jobs.append(alignment)

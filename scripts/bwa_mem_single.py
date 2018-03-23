@@ -153,4 +153,4 @@ if __name__ == "__main__":
                 user_python_path=ARGS.python_path
             )
         ],
-        local_scheduler=True, workers=50)
+        local_scheduler=True, workers=25)
