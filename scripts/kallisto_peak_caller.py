@@ -143,7 +143,7 @@ class kallisto_paired(luigi.Task):
 
 if __name__ == "__main__":
     # Set up the command line parameters
-    PARSER = argparse.ArgumentParser(description="BioBamBam Pipeline Wrapper")
+    PARSER = argparse.ArgumentParser(description="Kallisto Pipeline Wrapper")
     PARSER.add_argument("--in_fastq_file_1", help="")
     PARSER.add_argument("--in_fastq_file_2", default=None, help="")
     PARSER.add_argument("--genome_file", help="")

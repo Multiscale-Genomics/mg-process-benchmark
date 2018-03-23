@@ -88,7 +88,8 @@ class ProcessBSSeekerFilterAlignSingle(LSFJobTask):
         bam_handle = bamUtils()
         bam_handle.bam_sort(self.output_bam)
 
-class ProcessBSSeekerFilterAlignPaired(LSFJobTask, TimeTaskBSSeekerFilterAlign):
+
+class ProcessBSSeekerFilterAlignPaired(LSFJobTask):
     """
     Filtering of FASTQ paired-end reads prior to alignment
     """
