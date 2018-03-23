@@ -38,13 +38,13 @@ class BSseeker2PeakCaller(luigi.Task):
     Pipeline for aligning single end reads using BWA ALN
     """
 
-    in_fastq_file_1 = luigi.Parameter()
-    in_fastq_file_2 = luigi.Parameter()
     genome_file = luigi.Parameter()
-    index_file = luigi.Parameter()
-    abundance = luigi.Parameter()
-    abundance_h5 = luigi.Parameter()
-    run_info = luigi.Parameter()
+    genome_idx = luigi.Parameter()
+    bam = luigi.Parameter()
+    bai = luigi.Parameter()
+    wig = luigi.Parameter()
+    cgmap = luigi.Parameter()
+    atcgmap = luigi.Parameter()
     user_python_path = luigi.Parameter()
 
     def output(self):
@@ -55,10 +55,9 @@ class BSseeker2PeakCaller(luigi.Task):
             Location of the merged aligned reads in bam format
         """
         return [
-            luigi.LocalTarget(self.index_file),
-            luigi.LocalTarget(self.abundance),
-            luigi.LocalTarget(self.abundance_h5),
-            luigi.LocalTarget(self.run_info)
+            luigi.LocalTarget(self.wig),
+            luigi.LocalTarget(self.cgmap),
+            luigi.LocalTarget(self.atcgmap)
         ]
 
     def run(self):
@@ -74,13 +73,13 @@ class BSseeker2PeakCaller(luigi.Task):
         """
         print("### PROCESSING BAM FILE")
         bss2_handle = ProcessBSSeekerPeakCaller(
-            in_fastq_file_1=self.in_fastq_file_1,
-            in_fastq_file_2=self.in_fastq_file_2,
             genome_file=self.genome_file,
-            index_file=self.index_file,
-            abundance=self.abundance,
-            abundance_h5=self.abundance_h5,
-            run_info=self.run_info,
+            genome_idx=self.genome_idx,
+            bam=self.bam,
+            bai=self.bai,
+            wig=self.wig,
+            cgmap=self.cgmap,
+            atcgmap=self.atcgmap,
             user_python_path=self.user_python_path,
             n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR, queue_flag=QUEUE_FLAG,
             job_name_flag="BSS2 PC", save_job_info=SAVE_JOB_INFO,
@@ -91,12 +90,9 @@ class BSseeker2PeakCaller(luigi.Task):
 if __name__ == "__main__":
     # Set up the command line parameters
     PARSER = argparse.ArgumentParser(description="BS Seeker 2 Peak Caller Pipeline Wrapper")
-    PARSER.add_argument("--in_fastq_file_1", help="")
-    PARSER.add_argument("--in_fastq_file_2", help="")
     PARSER.add_argument("--genome_file", help="")
-    PARSER.add_argument("--index_file", help="")
+    PARSER.add_argument("--genome_idx", help="")
     PARSER.add_argument("--bam", help="")
-    PARSER.add_argument("--bai", help="")
     PARSER.add_argument("--bai", help="")
     PARSER.add_argument("--wig", help="")
     PARSER.add_argument("--cgmap", help="")
@@ -112,10 +108,8 @@ if __name__ == "__main__":
     luigi.build(
         [
             BSseeker2PeakCaller(
-                in_fastq_file_1=ARGS.in_fastq_file_1,
-                in_fastq_file_2=ARGS.in_fastq_file_2,
                 genome_file=ARGS.genome_file,
-                index_file=ARGS.index_file,
+                genome_idx=ARGS.genome_idx,
                 bam=ARGS.bam,
                 bai=ARGS.bai,
                 wig=ARGS.wig,
