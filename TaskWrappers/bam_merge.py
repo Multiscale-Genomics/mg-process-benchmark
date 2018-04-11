@@ -201,6 +201,7 @@ class ProcessMergeBams(luigi.Task):
             bam_file=bam_job_files.pop(0),
             bam_file_out=self.bam_file_out,
             n_cpu_flag=1, shared_tmp_dir=self.user_shared_tmp_dir,
+            resource_flag=self.user_resource_flag, memory_flag=self.user_memory_flag,
             queue_flag=self.user_queue_flag, job_name_flag="bam_sort",
             save_job_info=self.user_save_job_info, extra_bsub_args=self.user_python_path
         )

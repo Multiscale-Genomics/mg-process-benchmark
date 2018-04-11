@@ -34,6 +34,7 @@ QUEUE_FLAG = "production-rh7"
 SAVE_JOB_INFO = False
 RUN_TIME_FLAG = 600
 
+
 class IndexGenome(luigi.Task):
     """
     Pipeline for indexing genomes provided in FASTA format
@@ -97,6 +98,7 @@ class IndexGenome(luigi.Task):
         index_jobs.append(index)
 
         yield index_jobs
+
 
 if __name__ == "__main__":
     # Set up the command line parameters

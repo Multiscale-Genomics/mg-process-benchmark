@@ -38,7 +38,7 @@ class BSseeker2PeakCaller(luigi.Task):
     Pipeline for aligning single end reads using BWA ALN
     """
 
-    genome_file = luigi.Parameter()
+    genome_fa = luigi.Parameter()
     genome_idx = luigi.Parameter()
     bam = luigi.Parameter()
     bai = luigi.Parameter()
@@ -73,7 +73,7 @@ class BSseeker2PeakCaller(luigi.Task):
         """
         print("### PROCESSING BAM FILE")
         bss2_handle = ProcessBSSeekerPeakCaller(
-            genome_file=self.genome_file,
+            genome_fa=self.genome_fa,
             genome_idx=self.genome_idx,
             bam=self.bam,
             bai=self.bai,
@@ -90,7 +90,7 @@ class BSseeker2PeakCaller(luigi.Task):
 if __name__ == "__main__":
     # Set up the command line parameters
     PARSER = argparse.ArgumentParser(description="BS Seeker 2 Peak Caller Pipeline Wrapper")
-    PARSER.add_argument("--genome_file", help="")
+    PARSER.add_argument("--genome_fa", help="")
     PARSER.add_argument("--genome_idx", help="")
     PARSER.add_argument("--bam", help="")
     PARSER.add_argument("--bai", help="")
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     luigi.build(
         [
             BSseeker2PeakCaller(
-                genome_file=ARGS.genome_file,
+                genome_fa=ARGS.genome_fa,
                 genome_idx=ARGS.genome_idx,
                 bam=ARGS.bam,
                 bai=ARGS.bai,

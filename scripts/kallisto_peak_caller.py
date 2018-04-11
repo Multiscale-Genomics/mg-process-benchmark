@@ -25,10 +25,8 @@ import luigi
 from TaskWrappers.kallisto import ProcessKallistoSingle, ProcessKallistoPaired
 
 SHARED_TMP_DIR = ""
-RESOURCE_FLAG_ALIGNMENT = "mem=16384"
-MEMORY_FLAG_ALIGNMENT = "16384"
-RESOURCE_FLAG_MERGE = "mem=16384"
-MEMORY_FLAG_MERGE = "16384"
+RESOURCE_FLAG = "mem=8192"
+MEMORY_FLAG = "8192"
 QUEUE_FLAG = "production-rh7"
 SAVE_JOB_INFO = False
 
@@ -80,7 +78,9 @@ class kallisto_single(luigi.Task):
             abundance_h5=self.abundance_h5,
             run_info=self.run_info,
             user_python_path=self.user_python_path,
-            n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR, queue_flag=QUEUE_FLAG,
+            n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR,
+            resource_flag=RESOURCE_FLAG, memory_flag=MEMORY_FLAG,
+            queue_flag=QUEUE_FLAG,
             job_name_flag="kallisto", save_job_info=SAVE_JOB_INFO,
             extra_bsub_args=self.user_python_path)
         yield kallisto_handle
@@ -135,7 +135,9 @@ class kallisto_paired(luigi.Task):
             abundance_h5=self.abundance_h5,
             run_info=self.run_info,
             user_python_path=self.user_python_path,
-            n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR, queue_flag=QUEUE_FLAG,
+            n_cpu_flag=1, shared_tmp_dir=SHARED_TMP_DIR,
+            resource_flag=RESOURCE_FLAG, memory_flag=MEMORY_FLAG,
+            queue_flag=QUEUE_FLAG,
             job_name_flag="kallisto", save_job_info=SAVE_JOB_INFO,
             extra_bsub_args=self.user_python_path)
         yield kallisto_handle
